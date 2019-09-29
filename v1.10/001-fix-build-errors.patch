@@ -1,0 +1,422 @@
+From e8a7167bc5712b752dca0a5bbb24ac6fecbf837b Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <me@lochnair.net>
+Date: Sun, 1 Oct 2017 10:14:50 +0200
+Subject: [PATCH 1/6] Fix build errors
+
+---
+ arch/mips/include/asm/asmmacro-32.h | 20 +++++++++
+ arch/mips/include/asm/fpregdef.h    | 14 +++++++
+ arch/mips/include/asm/mipsregs.h    | 11 ++++-
+ arch/mips/kernel/branch.c           |  2 +-
+ arch/mips/kernel/genex.S            |  1 +
+ arch/mips/kernel/ptrace.c           | 65 ++---------------------------
+ arch/mips/kernel/r2300_fpu.S        |  6 +++
+ arch/mips/kernel/r4k_fpu.S          |  4 ++
+ arch/mips/kernel/r4k_switch.S       |  3 ++
+ arch/mips/kernel/smp-cmp.c          |  2 +-
+ arch/mips/math-emu/cp1emu.c         |  4 +-
+ 11 files changed, 66 insertions(+), 66 deletions(-)
+
+diff --git a/arch/mips/include/asm/asmmacro-32.h b/arch/mips/include/asm/asmmacro-32.h
+index c0d49e66c..86e047393 100644
+--- a/arch/mips/include/asm/asmmacro-32.h
++++ b/arch/mips/include/asm/asmmacro-32.h
+@@ -17,6 +17,8 @@
+ 	/* copy stuff from MIPS64 */
+ 
+ 	.macro  fpu_save_16even thread tmp=t0
++	.set	push
++	SET_HARDFLOAT
+ 	cfc1    \tmp, fcr31
+ 	sdc1    $f0,  THREAD_FPR0(\thread)
+ 	sdc1    $f2,  THREAD_FPR2(\thread)
+@@ -35,11 +37,13 @@
+ 	sdc1    $f28, THREAD_FPR28(\thread)
+ 	sdc1    $f30, THREAD_FPR30(\thread)
+ 	sw  \tmp, THREAD_FCR31(\thread)
++	.set pop
+ 	.endm
+ 
+ 	.macro  fpu_save_16odd thread
+ 	.set    push
+ 	.set    mips64r2
++	SET_HARDFLOAT
+ 	sdc1    $f1,  THREAD_FPR1(\thread)
+ 	sdc1    $f3,  THREAD_FPR3(\thread)
+ 	sdc1    $f5,  THREAD_FPR5(\thread)
+@@ -72,6 +76,8 @@
+ 	.endm
+ 
+ 	.macro  fpu_restore_16even thread tmp=t0
++	.set	push
++	SET_HARDFLOAT
+ 	lw  \tmp, THREAD_FCR31(\thread)
+ 	ldc1    $f0,  THREAD_FPR0(\thread)
+ 	ldc1    $f2,  THREAD_FPR2(\thread)
+@@ -90,11 +96,13 @@
+ 	ldc1    $f28, THREAD_FPR28(\thread)
+ 	ldc1    $f30, THREAD_FPR30(\thread)
+ 	ctc1    \tmp, fcr31
++	.set pop
+ 	.endm
+ 
+ 	.macro  fpu_restore_16odd thread
+ 	.set    push
+ 	.set    mips64r2
++	SET_HARDFLOAT
+ 	ldc1    $f1,  THREAD_FPR1(\thread)
+ 	ldc1    $f3,  THREAD_FPR3(\thread)
+ 	ldc1    $f5,  THREAD_FPR5(\thread)
+@@ -129,6 +137,8 @@
+ #else
+ 
+ 	.macro  fpu_save_double thread status tmp1=t0
++	.set	push
++	SET_HARDFLOAT
+ 	cfc1	\tmp1,  fcr31
+ 	sdc1	$f0,  THREAD_FPR0(\thread)
+ 	sdc1	$f2,  THREAD_FPR2(\thread)
+@@ -147,9 +157,12 @@
+ 	sdc1	$f28, THREAD_FPR28(\thread)
+ 	sdc1	$f30, THREAD_FPR30(\thread)
+ 	sw	\tmp1, THREAD_FCR31(\thread)
++	.set	pop
+ 	.endm
+ 
+ 	.macro	fpu_save_single thread tmp=t0
++	.set	push
++	SET_HARDFLOAT
+ 	cfc1	\tmp,  fcr31
+ 	swc1	$f0,  THREAD_FPR0(\thread)
+ 	swc1	$f1,  THREAD_FPR1(\thread)
+@@ -184,9 +197,12 @@
+ 	swc1	$f30, THREAD_FPR30(\thread)
+ 	swc1	$f31, THREAD_FPR31(\thread)
+ 	sw	\tmp, THREAD_FCR31(\thread)
++	.set	pop
+ 	.endm
+ 
+ 	.macro	fpu_restore_double thread status tmp=t0
++	.set	push
++	SET_HARDFLOAT
+ 	lw	\tmp, THREAD_FCR31(\thread)
+ 	ldc1	$f0,  THREAD_FPR0(\thread)
+ 	ldc1	$f2,  THREAD_FPR2(\thread)
+@@ -205,9 +221,12 @@
+ 	ldc1	$f28, THREAD_FPR28(\thread)
+ 	ldc1	$f30, THREAD_FPR30(\thread)
+ 	ctc1	\tmp, fcr31
++	.set pop
+ 	.endm
+ 
+ 	.macro	fpu_restore_single thread tmp=t0
++	.set push
++	SET_HARDFLOAT
+ 	lw	\tmp, THREAD_FCR31(\thread)
+ 	lwc1	$f0,  THREAD_FPR0(\thread)
+ 	lwc1	$f1,  THREAD_FPR1(\thread)
+@@ -242,6 +261,7 @@
+ 	lwc1	$f30, THREAD_FPR30(\thread)
+ 	lwc1	$f31, THREAD_FPR31(\thread)
+ 	ctc1	\tmp, fcr31
++	.set pop
+ 	.endm
+ 
+ #endif  // CONFIG_CPU_MIPS32_R2
+diff --git a/arch/mips/include/asm/fpregdef.h b/arch/mips/include/asm/fpregdef.h
+index 429481f90..f184ba088 100644
+--- a/arch/mips/include/asm/fpregdef.h
++++ b/arch/mips/include/asm/fpregdef.h
+@@ -14,6 +14,20 @@
+ 
+ #include <asm/sgidefs.h>
+ 
++/*
++ * starting with binutils 2.24.51.20140729, MIPS binutils warn about mixing
++ * hardfloat and softfloat object files.  The kernel build uses soft-float by
++ * default, so we also need to pass -msoft-float along to GAS if it supports it.
++ * But this in turn causes assembler errors in files which access hardfloat
++ * registers.  We detect if GAS supports "-msoft-float" in the Makefile and
++ * explicitly put ".set hardfloat" where floating point registers are touched.
++ */
++#ifdef GAS_HAS_SET_HARDFLOAT
++#define SET_HARDFLOAT .set hardfloat
++#else
++#define SET_HARDFLOAT
++#endif
++
+ #if _MIPS_SIM == _MIPS_SIM_ABI32
+ 
+ /*
+diff --git a/arch/mips/include/asm/mipsregs.h b/arch/mips/include/asm/mipsregs.h
+index 5d5d1e9b0..3f6583dcd 100644
+--- a/arch/mips/include/asm/mipsregs.h
++++ b/arch/mips/include/asm/mipsregs.h
+@@ -1249,7 +1249,7 @@ do {									\
+ /*
+  * Macros to access the floating point coprocessor control registers
+  */
+-#define read_32bit_cp1_register(source)					\
++#define _read_32bit_cp1_register(source, gas_hardfloat)			\
+ ({									\
+ 	int __res;							\
+ 									\
+@@ -1259,12 +1259,21 @@ do {									\
+ 	"	# gas fails to assemble cfc1 for some archs,	\n"	\
+ 	"	# like Octeon.					\n"	\
+ 	"	.set	mips1					\n"	\
++	"	"STR(gas_hardfloat)"				\n"	\
+ 	"	cfc1	%0,"STR(source)"			\n"	\
+ 	"	.set	pop					\n"	\
+ 	: "=r" (__res));						\
+ 	__res;								\
+ })
+ 
++#ifdef GAS_HAS_SET_HARDFLOAT
++#define read_32bit_cp1_register(source)					\
++	_read_32bit_cp1_register(source, .set hardfloat)
++#else
++#define read_32bit_cp1_register(source)					\
++	_read_32bit_cp1_register(source, )
++#endif
++
+ #define write_32bit_cp1_register(dest,value)                            \
+ ({									\
+ 	__asm__ __volatile__(						\
+diff --git a/arch/mips/kernel/branch.c b/arch/mips/kernel/branch.c
+index 46c2ad070..41cad4e59 100644
+--- a/arch/mips/kernel/branch.c
++++ b/arch/mips/kernel/branch.c
+@@ -366,7 +366,7 @@ int __compute_return_epc_for_insn(struct pt_regs *regs,
+ 	case cop1_op:
+ 		preempt_disable();
+ 		if (is_fpu_owner())
+-			asm volatile("cfc1\t%0,$31" : "=r" (fcr31));
++			fcr31 = read_32bit_cp1_register(CP1_STATUS);
+ 		else
+ 			fcr31 = current->thread.fpu.fcr31;
+ 		preempt_enable();
+diff --git a/arch/mips/kernel/genex.S b/arch/mips/kernel/genex.S
+index ece887634..9b6e18b0c 100644
+--- a/arch/mips/kernel/genex.S
++++ b/arch/mips/kernel/genex.S
+@@ -416,6 +416,7 @@ NESTED(nmi_handler, PT_SIZE, sp)
+ 	.set	push
+ 	/* gas fails to assemble cfc1 for some archs (octeon).*/ \
+ 	.set	mips1
++	SET_HARDFLOAT
+ 	cfc1	a1, fcr31
+ 	li	a2, ~(0x3f << 12)
+ 	and	a2, a1
+diff --git a/arch/mips/kernel/ptrace.c b/arch/mips/kernel/ptrace.c
+index b596d21b1..e18da5c2b 100644
+--- a/arch/mips/kernel/ptrace.c
++++ b/arch/mips/kernel/ptrace.c
+@@ -105,7 +105,6 @@ int ptrace_setregs(struct task_struct *child, __s64 __user *data)
+ int ptrace_getfpregs(struct task_struct *child, __u32 __user *data)
+ {
+ 	int i;
+-	unsigned int tmp;
+ 
+ 	if (!access_ok(VERIFY_WRITE, data, 33 * 8))
+ 		return -EIO;
+@@ -120,29 +119,7 @@ int ptrace_getfpregs(struct task_struct *child, __u32 __user *data)
+ 	}
+ 
+ 	__put_user(child->thread.fpu.fcr31, data + 64);
+-
+-	preempt_disable();
+-	if (cpu_has_fpu) {
+-		unsigned int flags;
+-
+-		if (cpu_has_mipsmt) {
+-			unsigned int vpflags = dvpe();
+-			flags = read_c0_status();
+-			__enable_fpu();
+-			__asm__ __volatile__("cfc1\t%0,$0" : "=r" (tmp));
+-			write_c0_status(flags);
+-			evpe(vpflags);
+-		} else {
+-			flags = read_c0_status();
+-			__enable_fpu();
+-			__asm__ __volatile__("cfc1\t%0,$0" : "=r" (tmp));
+-			write_c0_status(flags);
+-		}
+-	} else {
+-		tmp = 0;
+-	}
+-	preempt_enable();
+-	__put_user(tmp, data + 65);
++	__put_user(current_cpu_data.fpu_id, data + 65);
+ 
+ 	return 0;
+ }
+@@ -327,44 +304,10 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		case FPC_CSR:
+ 			tmp = child->thread.fpu.fcr31;
+ 			break;
+-		case FPC_EIR: { /* implementation / version register */
+-			unsigned int flags;
+-#ifdef CONFIG_MIPS_MT_SMTC
+-			unsigned long irqflags;
+-			unsigned int mtflags;
+-#endif /* CONFIG_MIPS_MT_SMTC */
+-
+-			preempt_disable();
+-			if (!cpu_has_fpu) {
+-				preempt_enable();
+-				break;
+-			}
+-
+-#ifdef CONFIG_MIPS_MT_SMTC
+-			/* Read-modify-write of Status must be atomic */
+-			local_irq_save(irqflags);
+-			mtflags = dmt();
+-#endif /* CONFIG_MIPS_MT_SMTC */
+-			if (cpu_has_mipsmt) {
+-				unsigned int vpflags = dvpe();
+-				flags = read_c0_status();
+-				__enable_fpu();
+-				__asm__ __volatile__("cfc1\t%0,$0": "=r" (tmp));
+-				write_c0_status(flags);
+-				evpe(vpflags);
+-			} else {
+-				flags = read_c0_status();
+-				__enable_fpu();
+-				__asm__ __volatile__("cfc1\t%0,$0": "=r" (tmp));
+-				write_c0_status(flags);
+-			}
+-#ifdef CONFIG_MIPS_MT_SMTC
+-			emt(mtflags);
+-			local_irq_restore(irqflags);
+-#endif /* CONFIG_MIPS_MT_SMTC */
+-			preempt_enable();
++		case FPC_EIR:
++			/* implementation / version register */
++			tmp = current_cpu_data.fpu_id;
+ 			break;
+-		}
+ 		case DSP_BASE ... DSP_BASE + 5: {
+ 			dspreg_t *dregs;
+ 
+diff --git a/arch/mips/kernel/r2300_fpu.S b/arch/mips/kernel/r2300_fpu.S
+index f31063dbd..5ce3b746c 100644
+--- a/arch/mips/kernel/r2300_fpu.S
++++ b/arch/mips/kernel/r2300_fpu.S
+@@ -28,6 +28,8 @@
+ 	.set	mips1
+ 	/* Save floating point context */
+ LEAF(_save_fp_context)
++	.set	push
++	SET_HARDFLOAT
+ 	li	v0, 0					# assume success
+ 	cfc1	t1,fcr31
+ 	EX(swc1 $f0,(SC_FPREGS+0)(a0))
+@@ -65,6 +67,7 @@ LEAF(_save_fp_context)
+ 	EX(sw	t1,(SC_FPC_CSR)(a0))
+ 	cfc1	t0,$0				# implementation/version
+ 	jr	ra
++	.set	pop
+ 	.set	nomacro
+ 	 EX(sw	t0,(SC_FPC_EIR)(a0))
+ 	.set	macro
+@@ -80,6 +83,8 @@ LEAF(_save_fp_context)
+  * stack frame which might have been changed by the user.
+  */
+ LEAF(_restore_fp_context)
++	.set	push
++	SET_HARDFLOAT
+ 	li	v0, 0					# assume success
+ 	EX(lw t0,(SC_FPC_CSR)(a0))
+ 	EX(lwc1 $f0,(SC_FPREGS+0)(a0))
+@@ -116,6 +121,7 @@ LEAF(_restore_fp_context)
+ 	EX(lwc1 $f31,(SC_FPREGS+248)(a0))
+ 	jr	ra
+ 	 ctc1	t0,fcr31
++	.set	pop
+ 	END(_restore_fp_context)
+ 	.set	reorder
+ 
+diff --git a/arch/mips/kernel/r4k_fpu.S b/arch/mips/kernel/r4k_fpu.S
+index 1b7a0e9cc..16e97fbfa 100644
+--- a/arch/mips/kernel/r4k_fpu.S
++++ b/arch/mips/kernel/r4k_fpu.S
+@@ -31,6 +31,8 @@
+ 
+ 	.set	noreorder
+ 	.set	mips3
++	.set	push
++	SET_HARDFLOAT
+ 
+ LEAF(_save_fp_context)
+ 	cfc1	t1, fcr31
+@@ -53,9 +55,11 @@ LEAF(_save_fp_context)
+ 	EX	sdc1 $f27, SC_FPREGS+216(a0)
+ 	EX	sdc1 $f29, SC_FPREGS+232(a0)
+ 	EX	sdc1 $f31, SC_FPREGS+248(a0)
++	.set	pop
+ #else
+ #ifdef CONFIG_MIPS32_R2
+ 	.set    push
++	SET_HARDFLOAT
+ 	.set    mips64r2
+ 	.set    noreorder
+ 	mfc0    t0, CP0_STATUS
+diff --git a/arch/mips/kernel/r4k_switch.S b/arch/mips/kernel/r4k_switch.S
+index 4bb94812b..34826b922 100644
+--- a/arch/mips/kernel/r4k_switch.S
++++ b/arch/mips/kernel/r4k_switch.S
+@@ -183,6 +183,8 @@ LEAF(_restore_fp)
+  */
+ 
+ LEAF(_init_fpu)
++	.set	push
++	SET_HARDFLOAT
+ #ifdef CONFIG_MIPS_MT_SMTC
+ 	/* Rather than manipulate per-VPE Status, set per-TC bit in TCStatus */
+ 	mfc0	t0, CP0_TCSTATUS
+@@ -351,5 +353,6 @@ LEAF(_init_fpu)
+ 	dmtc1	t1, $f28
+ 	dmtc1	t1, $f30
+ #endif /* CONFIG_CPU_MIPS32 */
++	.set	pop
+ 	jr	ra
+ 	END(_init_fpu)
+diff --git a/arch/mips/kernel/smp-cmp.c b/arch/mips/kernel/smp-cmp.c
+index 7dfe3e8db..79ab1b057 100644
+--- a/arch/mips/kernel/smp-cmp.c
++++ b/arch/mips/kernel/smp-cmp.c
+@@ -251,7 +251,7 @@ static void cmp_cpus_done(void)
+  * __KSTK_TOS(idle) is apparently the stack pointer
+  * (unsigned long)idle->thread_info the gp
+  */
+-static void cmp_boot_secondary(int cpu, struct task_struct *idle)
++static void __cpuinit cmp_boot_secondary(int cpu, struct task_struct *idle)
+ {
+ 	struct thread_info *gp = task_thread_info(idle);
+ 	unsigned long sp = __KSTK_TOS(idle);
+diff --git a/arch/mips/math-emu/cp1emu.c b/arch/mips/math-emu/cp1emu.c
+index b91d41283..8a138b5d4 100644
+--- a/arch/mips/math-emu/cp1emu.c
++++ b/arch/mips/math-emu/cp1emu.c
+@@ -567,7 +567,7 @@ int mm_isBranchInstr(struct pt_regs *regs, struct mm_decoded_insn dec_insn,
+ 		case mm_bc1t_op:
+ 			preempt_disable();
+ 			if (is_fpu_owner())
+-				asm volatile("cfc1\t%0,$31" : "=r" (fcr31));
++				fcr31 = read_32bit_cp1_register(CP1_STATUS);
+ 			else
+ 				fcr31 = current->thread.fpu.fcr31;
+ 			preempt_enable();
+@@ -818,7 +818,7 @@ static int isBranchInstr(struct pt_regs *regs, struct mm_decoded_insn dec_insn,
+ 		if (insn.i_format.rs == bc_op) {
+ 			preempt_disable();
+ 			if (is_fpu_owner())
+-				asm volatile("cfc1\t%0,$31" : "=r" (fcr31));
++				fcr31 = read_32bit_cp1_register(CP1_STATUS);
+ 			else
+ 				fcr31 = current->thread.fpu.fcr31;
+ 			preempt_enable();
+-- 
+2.23.0
+

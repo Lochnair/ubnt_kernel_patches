@@ -1,0 +1,32 @@
+From 4bf8993e66a8b768c02bebcfcf22f2eea896ea9b Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <me@lochnair.net>
+Date: Sun, 1 Oct 2017 09:57:08 +0200
+Subject: [PATCH 2/6] Don't ever add a + to the version in case of a Git repo
+
+---
+ scripts/setlocalversion | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index 84b88f109..9684a2269 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -162,15 +162,6 @@ res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}"
+ if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
+ 	# full scm version string
+ 	res="$res$(scm_version)"
+-else
+-	# append a plus sign if the repository is not in a clean
+-	# annotated or signed tagged state (as git describe only
+-	# looks at signed or annotated tags - git tag -a/-s) and
+-	# LOCALVERSION= is not specified
+-	if test "${LOCALVERSION+set}" != "set"; then
+-		scm=$(scm_version --short)
+-		res="$res${scm:++}"
+-	fi
+ fi
+ 
+ echo "$res"
+-- 
+2.23.0
+
