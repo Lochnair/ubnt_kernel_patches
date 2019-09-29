@@ -1,0 +1,21 @@
+From af95ff38bb472cfdd9850b420ad122faf4ed9b26 Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <nils@stokkdalen.no>
+Date: Sun, 29 Sep 2019 16:49:05 +0200
+Subject: [PATCH 4/4] Enable libcrc32c module
+
+---
+ arch/mips/configs/ubnt_er_e100_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/mips/configs/ubnt_er_e100_defconfig b/arch/mips/configs/ubnt_er_e100_defconfig
+index fee2f9cfa..ae432b426 100644
+--- a/arch/mips/configs/ubnt_er_e100_defconfig
++++ b/arch/mips/configs/ubnt_er_e100_defconfig
+@@ -447,3 +447,4 @@ CONFIG_CRYPTO_USER_API_HASH=m
+ # CONFIG_XZ_DEC_ARM is not set
+ # CONFIG_XZ_DEC_ARMTHUMB is not set
+ # CONFIG_XZ_DEC_SPARC is not set
++CONFIG_LIBCRC32C=m
+-- 
+2.23.0
+

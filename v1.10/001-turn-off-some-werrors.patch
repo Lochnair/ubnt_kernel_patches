@@ -1,0 +1,56 @@
+From d07bd7dd21b60665faa8cd33a9409bbeed99d72c Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <me@lochnair.net>
+Date: Tue, 19 Sep 2017 17:30:44 +0200
+Subject: [PATCH 1/4] Turn off some werrors
+
+One more
+
+Fix werror crap
+---
+ arch/mips/Makefile               | 2 ++
+ arch/mips/cavium-octeon/Makefile | 2 ++
+ arch/mips/math-emu/Makefile      | 2 ++
+ 3 files changed, 6 insertions(+)
+
+diff --git a/arch/mips/Makefile b/arch/mips/Makefile
+index 5c825d5cb..c4bba56fc 100644
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -195,6 +195,8 @@ cflags-$(CONFIG_CPU_R4000_WORKAROUNDS)	+= $(call cc-option,-mfix-r4000,)
+ cflags-$(CONFIG_CPU_R4400_WORKAROUNDS)	+= $(call cc-option,-mfix-r4400,)
+ cflags-$(CONFIG_CPU_DADDI_WORKAROUNDS)	+= $(call cc-option,-mno-daddi,)
+ 
++cflags-y += -Wno-maybe-uninitialized
++
+ ifdef CONFIG_CPU_SB1
+ ifdef CONFIG_SB1_PASS_1_WORKAROUNDS
+ KBUILD_AFLAGS_MODULE += -msb1-pass1-workarounds
+diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
+index 3a9fe8b5d..fceb56296 100644
+--- a/arch/mips/cavium-octeon/Makefile
++++ b/arch/mips/cavium-octeon/Makefile
+@@ -12,6 +12,8 @@
+ CFLAGS_octeon-platform.o = -I$(src)/../../../scripts/dtc/libfdt
+ CFLAGS_setup.o = -I$(src)/../../../scripts/dtc/libfdt
+ 
++ccflags-y += -Wno-misleading-indentation
++
+ obj-y := setup.o serial.o octeon-platform.o octeon-irq.o csrc-octeon.o \
+ 	 octeon-hw-status.o octeon_info.o cavium.o resource-mgr.o
+ obj-y += dma-octeon.o
+diff --git a/arch/mips/math-emu/Makefile b/arch/mips/math-emu/Makefile
+index 121a848a3..f9c5c9daa 100644
+--- a/arch/mips/math-emu/Makefile
++++ b/arch/mips/math-emu/Makefile
+@@ -2,6 +2,8 @@
+ # Makefile for the Linux/MIPS kernel FPU emulation.
+ #
+ 
++ccflags-y += -Wno-bool-operation
++
+ obj-y	:= cp1emu.o ieee754m.o ieee754d.o ieee754dp.o ieee754sp.o ieee754.o \
+ 	   ieee754xcpt.o dp_frexp.o dp_modf.o dp_div.o dp_mul.o dp_sub.o \
+ 	   dp_add.o dp_fsp.o dp_cmp.o dp_logb.o dp_scalb.o dp_simple.o \
+-- 
+2.23.0
+

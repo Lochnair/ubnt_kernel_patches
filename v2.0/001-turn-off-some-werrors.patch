@@ -1,0 +1,51 @@
+From fc8fd036204c9747003040fec3e2fc5a8aa958be Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <me@lochnair.net>
+Date: Tue, 19 Sep 2017 17:30:44 +0200
+Subject: [PATCH 3/4] Turn off some werrors
+
+---
+ arch/mips/Makefile               | 2 ++
+ arch/mips/cavium-octeon/Makefile | 2 ++
+ arch/mips/math-emu/Makefile      | 3 +++
+ 3 files changed, 7 insertions(+)
+
+diff --git a/arch/mips/Makefile b/arch/mips/Makefile
+index 5a0d566c9..5f8e2fb15 100644
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -206,6 +206,8 @@ cflags-$(CONFIG_CPU_R4000_WORKAROUNDS)	+= $(call cc-option,-mfix-r4000,)
+ cflags-$(CONFIG_CPU_R4400_WORKAROUNDS)	+= $(call cc-option,-mfix-r4400,)
+ cflags-$(CONFIG_CPU_DADDI_WORKAROUNDS)	+= $(call cc-option,-mno-daddi,)
+ 
++cflags-y += -Wno-maybe-uninitialized
++
+ # For smartmips configurations, there are hundreds of warnings due to ISA overrides
+ # in assembly and header files. smartmips is only supported for MIPS32r1 onwards
+ # and there is no support for 64-bit. Various '.set mips2' or '.set mips3' or
+diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
+index f61839ad2..e07dd6816 100644
+--- a/arch/mips/cavium-octeon/Makefile
++++ b/arch/mips/cavium-octeon/Makefile
+@@ -9,6 +9,8 @@
+ # Copyright (C) 2005-2009 Cavium Networks
+ #
+ 
++ccflags-y += -Wno-misleading-indentation
++
+ obj-y := setup.o serial.o octeon-platform.o octeon-irq.o csrc-octeon.o \
+ 	 octeon-hw-status.o octeon_info.o cavium.o
+ obj-y += dma-octeon.o
+diff --git a/arch/mips/math-emu/Makefile b/arch/mips/math-emu/Makefile
+index e9bbc2a65..f3509ea58 100644
+--- a/arch/mips/math-emu/Makefile
++++ b/arch/mips/math-emu/Makefile
+@@ -14,3 +14,6 @@ lib-y	+= ieee754d.o \
+ 	   sp_tlong.o sp_flong.o sp_sqrt.o
+ 
+ obj-$(CONFIG_DEBUG_FS) += me-debugfs.o
++
++ccflags-y += -Wno-bool-operation
++
+-- 
+2.23.0
+

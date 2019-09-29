@@ -1,0 +1,86 @@
+From dc4aca6e62aaf17f014c56b40116c055a9e01fff Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <me@lochnair.net>
+Date: Thu, 20 Dec 2018 19:27:28 +0200
+Subject: [PATCH 2/4] Add Jenkinsfile
+
+---
+ Jenkinsfile | 67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+ create mode 100644 Jenkinsfile
+
+diff --git a/Jenkinsfile b/Jenkinsfile
+new file mode 100644
+index 000000000..871b99269
+--- /dev/null
++++ b/Jenkinsfile
+@@ -0,0 +1,67 @@
++pipeline {
++    agent {
++        docker { image 'lochnair/octeon-buildenv:latest' }
++    }
++
++    stages {
++        stage('Clean') {
++            steps {
++               sh 'git reset --hard'
++               sh 'git clean -fX'
++            }
++        }
++
++        stage('Install dependencies') {
++            steps {
++                sh 'su-exec root apt-get update'
++                sh 'su-exec root apt-get -y install bc bison flex'
++            }
++        }
++
++        stage('Prepare') {
++            steps {
++                sh 'make ARCH=mips ubnt_er_e100_defconfig'
++            }
++        }
++
++        stage('Prepare for out-of-tree builds') {
++            steps {
++                sh 'make -j5 ARCH=mips CROSS_COMPILE=mips64-octeon-linux- prepare modules_prepare'
++                sh 'rm -rf tmp && mkdir tmp'
++                sh 'tar --exclude-vcs --exclude=tmp -cf tmp/e100-ksrc.tar .'
++                sh 'mv tmp/e100-ksrc.tar e100-ksrc.tar'
++            }
++        }
++
++        stage('Build') {
++            steps {
++                sh 'make -j5 ARCH=mips CROSS_COMPILE=mips64-octeon-linux- vmlinux modules'
++            }
++        }
++        
++        stage('Archive kernel image') {
++            steps {
++                sh 'mv -v vmlinux vmlinux.64'
++                sh 'tar cvjf e100-kernel.tar.bz2 vmlinux.64'
++                archiveArtifacts artifacts: 'e100-kernel.tar.bz2', fingerprint: true, onlyIfSuccessful: true
++            }
++        }
++        
++        stage('Archive kernel modules') {
++            steps {
++                sh 'make ARCH=mips CROSS_COMPILE=mips64-octeon-linux- INSTALL_MOD_PATH=destdir modules_install'
++                sh 'tar cvjf e100-modules.tar.bz2 -C destdir .'
++                archiveArtifacts artifacts: 'e100-modules.tar.bz2', fingerprint: true, onlyIfSuccessful: true
++            }
++        }
++
++        stage('Archive build tree') {
++            steps {
++                sh 'tar -uvf e100-ksrc.tar Module.symvers'
++                sh 'bzip2 e100-ksrc.tar'
++                archiveArtifacts artifacts: 'e100-ksrc.tar.bz2', fingerprint: true, onlyIfSuccessful: true
++            }
++        }
++    }
++}
++
+-- 
+2.23.0
+

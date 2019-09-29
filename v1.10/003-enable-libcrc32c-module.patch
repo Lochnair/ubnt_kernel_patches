@@ -1,0 +1,25 @@
+From 83f592ce9da7320ff6e41faebbf81276ec539d03 Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <me@lochnair.net>
+Date: Thu, 18 Jan 2018 19:34:32 +0100
+Subject: [PATCH 3/4] Enable libcrc32c module
+
+---
+ .config | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.config b/.config
+index 0987c9992..7e21b6c25 100644
+--- a/.config
++++ b/.config
+@@ -2315,7 +2315,7 @@ CONFIG_CRC32_SLICEBY8=y
+ # CONFIG_CRC32_SARWATE is not set
+ # CONFIG_CRC32_BIT is not set
+ # CONFIG_CRC7 is not set
+-# CONFIG_LIBCRC32C is not set
++CONFIG_LIBCRC32C=m
+ # CONFIG_CRC8 is not set
+ CONFIG_ZLIB_INFLATE=y
+ CONFIG_ZLIB_DEFLATE=m
+-- 
+2.23.0
+

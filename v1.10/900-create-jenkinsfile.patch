@@ -1,0 +1,72 @@
+From d0a381f24a4fd9a09c233a080646ded17855f8f8 Mon Sep 17 00:00:00 2001
+From: Nils Andreas Svee <me@lochnair.net>
+Date: Sun, 14 Jan 2018 16:24:02 +0100
+Subject: [PATCH 4/4] Create Jenkinsfile
+
+---
+ Jenkinsfile | 53 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+ create mode 100644 Jenkinsfile
+
+diff --git a/Jenkinsfile b/Jenkinsfile
+new file mode 100644
+index 000000000..c346e33ff
+--- /dev/null
++++ b/Jenkinsfile
+@@ -0,0 +1,53 @@
++pipeline {
++    agent {
++        docker { image 'lochnair/octeon-buildenv:latest' }
++    }
++
++    stages {
++        stage('Clean') {
++            steps {
++               sh 'git reset --hard'
++               sh 'git clean -fX'
++            }
++        }
++
++        stage('Prepare for out-of-tree builds') {
++            steps {
++                sh 'make -j5 ARCH=mips CROSS_COMPILE=mips64-octeon-linux- prepare modules_prepare'
++                sh 'rm -rf tmp && mkdir tmp'
++                sh 'tar --exclude-vcs --exclude=tmp -cf tmp/e100-ksrc.tar .'
++                sh 'mv tmp/e100-ksrc.tar e100-ksrc.tar'
++            }
++        }
++
++        stage('Build') {
++            steps {
++                sh 'make -j5 ARCH=mips CROSS_COMPILE=mips64-octeon-linux- vmlinux modules'
++            }
++        }
++        
++        stage('Archive kernel image') {
++            steps {
++                sh 'mv -v vmlinux vmlinux.64'
++                sh 'tar cvjf e100-kernel.tar.bz2 vmlinux.64'
++                archiveArtifacts artifacts: 'e100-kernel.tar.bz2', fingerprint: true, onlyIfSuccessful: true
++            }
++        }
++        
++        stage('Archive kernel modules') {
++            steps {
++                sh 'make ARCH=mips CROSS_COMPILE=mips64-octeon-linux- INSTALL_MOD_PATH=destdir modules_install'
++                sh 'tar cvjf e100-modules.tar.bz2 -C destdir .'
++                archiveArtifacts artifacts: 'e100-modules.tar.bz2', fingerprint: true, onlyIfSuccessful: true
++            }
++        }
++
++        stage('Archive build tree') {
++            steps {
++                sh 'tar -uvf e100-ksrc.tar Module.symvers'
++                sh 'bzip2 e100-ksrc.tar'
++                archiveArtifacts artifacts: 'e100-ksrc.tar.bz2', fingerprint: true, onlyIfSuccessful: true
++            }
++        }
++    }
++}
+-- 
+2.23.0
+
